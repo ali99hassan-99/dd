@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>سجل الديون</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root{
+      --bg:#0f172a;
+      --card:#111827;
+      --muted:#1f2937;
+      --text:#e5e7eb;
+      --sub:#9ca3af;
+      --accent:#22c55e;
+      --accent2:#3b82f6;
+      --danger:#ef4444;
+      --radius:18px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:"Noto Kufi Arabic", system-ui,sans-serif;background:linear-gradient(145deg,#0b1023,#111827 45%,#0b1023);color:var(--text);}
+    .container{max-width:1100px;margin:24px auto;padding:16px}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:16px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .logo{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 10px 30px rgba(34,197,94,.25)}
+    h1{font-size:22px;margin:0}
+    .grid{display:grid;gap:16px}
+    @media(min-width:900px){.grid{grid-template-columns:390px 1fr;}}
+    .card{background:var(--card);border:1px solid #1f2937;border-radius:var(--radius);box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .card .head{padding:14px 16px;border-bottom:1px solid var(--muted);display:flex;justify-content:space-between;align-items:center}
+    .card .content{padding:16px}
+    input,select,textarea{width:100%;padding:12px 14px;border-radius:14px;border:1px solid #2b3647;background:#0b1222;color:var(--text);outline:none}
+    input::placeholder,textarea::placeholder{color:#6b7280}
+    label{font-size:13px;color:var(--sub)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .actions{display:flex;gap:8px;flex-wrap:wrap}
+    .btn{padding:10px 14px;border-radius:12px;border:1px solid transparent;background:var(--muted);color:var(--text);cursor:pointer}
+    .btn:hover{filter:brightness(1.1)}
+    .btn.primary{background:linear-gradient(135deg,var(--accent),#16a34a);border-color:#14532d}
+    .btn.blue{background:linear-gradient(135deg,var(--accent2),#2563eb);border-color:#1e3a8a}
+    .btn.ghost{background:transparent;border-color:#334155}
+    .btn.warn{background:linear-gradient(135deg,var(--danger),#b91c1c);border-color:#7f1d1d}
+    table{width:100%;border-collapse:separate;border-spacing:0 10px}
+    thead th{font-size:12px;color:#9ca3af;text-align:right;padding:6px 8px}
+    tbody tr{background:#0b1222;border:1px solid #1f2937}
+    tbody tr td{padding:10px 8px;vertical-align:middle}
+    .tag{padding:6px 10px;border-radius:999px;font-size:12px}
+    .paid{background:rgba(34,197,94,.15);color:#86efac;border:1px solid rgba(34,197,94,.35)}
+    .unpaid{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+    .stats{display:grid;gap:10px}
+    @media(min-width:500px){.stats{grid-template-columns:repeat(3,1fr)}}
+    .stat{background:#0b1222;border:1px solid #1f2937;border-radius:14px;padding:12px}
+    .stat .title{font-size:12px;color:#94a3b8}
+    .stat .value{font-size:22px;font-weight:700;margin-top:6px}
+    .footer-note{color:#8892a6;font-size:12px;margin-top:12px}
+    .file-input{display:none}
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="brand">
+      <div class="logo"></div>
+      <div>
+        <h1>سجل الديون</h1>
+        <div style="color:#9ca3af;font-size:12px">إدارة الديون وتتبّع السداد بسهولة</div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="printBtn">طباعة</button>
+      <button class="btn ghost" id="exportCsvBtn">تصدير CSV</button>
+      <button class="btn ghost" id="exportJsonBtn">تصدير JSON</button>
+      <label class="btn ghost" for="importJson">استيراد JSON</label>
+      <input id="importJson" type="file" accept="application/json" class="file-input" />
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- form card -->
+    <section class="card" id="formCard">
+      <div class="head"><strong>إضافة / تعديل دين</strong><small id="formMode" style="color:#9ca3af">وضع الإضافة</small></div>
+      <div class="content">
+        <form id="debtForm">
+          <input type="hidden" id="debtId" />
+          <div class="row">
+            <div>
+              <label>اسم المدين</label>
+              <input id="name" placeholder="مثال: أحمد علي" required />
+            </div>
+            <div>
+              <label>المبلغ (دينار)</label>
+              <input id="amount" type="number" step="0.01" min="0" placeholder="مثال: 25000" required />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>التاريخ</label>
+              <input id="date" type="date" required />
+            </div>
+            <div>
+              <label>الحالة</label>
+              <select id="status">
+                <option value="unpaid">غير مسدد</option>
+                <option value="paid">مسدد</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>وصف / ملاحظة</label>
+            <textarea id="note" rows="3" placeholder="تفاصيل إضافية (اختياري)"></textarea>
+          </div>
+          <div class="actions" style="margin-top:10px">
+            <button class="btn primary" type="submit">حفظ</button>
+            <button class="btn ghost" type="button" id="resetForm">إلغاء</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- list card -->
+    <section class="card">
+      <div class="head">
+        <div class="toolbar">
+          <input id="search" placeholder="بحث بالاسم..." />
+          <select id="filterStatus" style="min-width:140px">
+            <option value="all">كل الحالات</option>
+            <option value="unpaid">غير مسدد</option>
+            <option value="paid">مسدد</option>
+          </select>
+          <select id="filterOverdue" style="min-width:180px">
+            <option value="all">كل الديون</option>
+            <option value="overdue">الديون المتأخرة أكثر من 30 يوم</option>
+          </select>
+          <select id="sortBy" style="min-width:180px">
+            <option value="dateDesc">الأحدث أولًا</option>
+            <option value="dateAsc">الأقدم أولًا</option>
+            <option value="amountDesc">المبلغ: الأعلى أولًا</option>
+            <option value="amountAsc">المبلغ: الأقل أولًا</option>
+            <option value="nameAsc">الاسم: أ-ي</option>
+            <option value="nameDesc">الاسم: ي-أ</option>
+          </select>
+          <button class="btn blue" id="addQuick">+ إضافة سريعة</button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="stats" id="stats">
+          <div class="stat"><div class="title">إجمالي الديون</div><div class="value" id="sumAll">0</div></div>
+          <div class="stat"><div class="title">المسدد</div><div class="value" id="sumPaid">0</div></div>
+          <div class="stat"><div class="title">المتبقي</div><div class="value" id="sumUnpaid">0</div></div>
+        </div>
+
+        <div style="overflow:auto;margin-top:12px">
+          <table>
+            <thead>
+              <tr>
+                <th>الاسم</th>
+                <th>المبلغ</th>
+                <th>التاريخ</th>
+                <th>الحالة</th>
+                <th>ملاحظة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="debtTable"></tbody>
+          </table>
+        </div>
+
+        <div class="footer-note">يتم الحفظ تلقائيًا في المتصفح (LocalStorage). يمكنك التصدير أو الاستيراد من الأعلى.</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY='debtLedgerV1';
+let debts=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');
+
+const debtForm=document.getElementById('debtForm');
+const debtId=document.getElementById('debtId');
+const nameEl=document.getElementById('name');
+const amountEl=document.getElementById('amount');
+const dateEl=document.getElementById('date');
+const statusEl=document.getElementById('status');
+const noteEl=document.getElementById('note');
+const formMode=document.getElementById('formMode');
+
+const searchEl=document.getElementById('search');
+const filterStatusEl=document.getElementById('filterStatus');
+const filterOverdueEl=document.getElementById('filterOverdue');
+const sortByEl=document.getElementById('sortBy');
+const addQuickBtn=document.getElementById('addQuick');
+
+const tbody=document.getElementById('debtTable');
+const sumAllEl=document.getElementById('sumAll');
+const sumPaidEl=document.getElementById('sumPaid');
+const sumUnpaidEl=document.getElementById('sumUnpaid');
+
+const printBtn=document.getElementById('printBtn');
+const exportCsvBtn=document.getElementById('exportCsvBtn');
+const exportJsonBtn=document.getElementById('exportJsonBtn');
+const importJsonInput=document.getElementById('importJson');
+const resetFormBtn=document.getElementById('resetForm');
+
+const fmt=new Intl.NumberFormat('ar-IQ',{style:'currency',currency:'IQD',maximumFractionDigits:0});
+function formatMoney(n){return isNaN(n)?'0':fmt.format(Number(n));}
+function today(){return new Date().toISOString().slice(0,10);}
+function escapeHtml(s){return (s||'').replace(/[&<>"]+/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(debts));}
+
+function render(){
+  let list=[...debts];
+  const q=searchEl.value.trim();
+  if(q) list=list.filter(d=>d.name.includes(q));
+
+  const fs=filterStatusEl.value;
+  if(fs!=='all') list=list.filter(d=>d.status===fs);
+
+  const fo=filterOverdueEl.value;
+  const now=new Date();
+  list=list.map(d=>{
+    d.overdue=false;
+    if(d.status==='unpaid' && d.date && ((now-new Date(d.date))/(1000*60*60*24))>30){d.overdue=true;}
+    return d;
+  });
+  if(fo==='overdue') list=list.filter(d=>d.overdue);
+
+  const sort=sortByEl.value;
+  list.sort((a,b)=>{
+    if(sort==='dateDesc') return (b.date||'').localeCompare(a.date||'');
+    if(sort==='dateAsc') return (a.date||'').localeCompare(b.date||'');
+    if(sort==='amountDesc') return Number(b.amount)-Number(a.amount);
+    if(sort==='amountAsc') return Number(a.amount)-Number(b.amount);
+    if(sort==='nameAsc') return a.name.localeCompare(b.name,'ar');
+    if(sort==='nameDesc') return b.name.localeCompare(a.name,'ar');
+    return 0;
+  });
+
+  tbody.innerHTML='';
+  for(const d of list){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td style="font-weight:600">${escapeHtml(d.name)}${d.overdue?'<span style="color:#f87171">⚠️</span>':''}</td>
+      <td>${formatMoney(d.amount)}</td>
+      <td>${d.date||''}</td>
+      <td><span class="tag ${d.status==='paid'?'paid':'unpaid'}">${d.status==='paid'?'مسدد':'غير مسدد'}</span></td>
+      <td>${escapeHtml(d.note||'')}</td>
+      <td>
+        <div class="actions">
+          <button class="btn ghost" data-edit="${d.id}">تحرير</button>
+          <button class="btn warn" data-toggle="${d.id}">${d.status==='paid'?'إلغاء التسديد':'تسديد'}</button>
+          <button class="btn danger" data-del="${d.id}">حذف</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  }
+
+  const sumAll=debts.reduce((s,d)=>s+Number(d.amount||0),0);
+  const sumPaid=debts.filter(d=>d.status==='paid').reduce((s,d)=>s+Number(d.amount||0),0);
+  const sumUnpaid=sumAll-sumPaid;
+  sumAllEl.textContent=formatMoney(sumAll);
+  sumPaidEl.textContent=formatMoney(sumPaid);
+  sumUnpaidEl.textContent=formatMoney(sumUnpaid);
+}
+
+tbody.addEventListener('click',e=>{
+  const t=e.target;
+  if(t.dataset.edit){const d=debts.find(x=>x.id===t.dataset.edit);if(!d) return;debtId.value=d.id;nameEl.value=d.name;amountEl.value=d.amount;dateEl.value=d.date||'';statusEl.value=d.status;noteEl.value=d.note||'';formMode.textContent='وضع التعديل';window.scrollTo({top:0,behavior:'smooth'});}
+  if(t.dataset.del){if(confirm('حذف هذا الدين؟')){debts=debts.filter(d=>d.id!==t.dataset.del);save();render();}}
+  if(t.dataset.toggle){const d=debts.find(x=>x.id===t.dataset.toggle);if(d){d.status=d.status==='paid'?'unpaid':'paid';save();render();}}
+});
+
+debtForm.addEventListener('submit',e=>{
+  e.preventDefault();
+  const id=debtId.value||crypto.randomUUID();
+  const payload={id,name:nameEl.value.trim(),amount:Number(amountEl.value||0),date:dateEl.value||today(),status:statusEl.value,note:noteEl.value.trim()};
+  const i=debts.findIndex(d=>d.id===id);
+  if(i>-1) debts[i]=payload; else debts.unshift(payload);
+  save();render();debtForm.reset();debtId.value='';formMode.textContent='وضع الإضافة';
+});
+
+resetFormBtn.addEventListener('click',()=>{debtForm.reset();debtId.value='';formMode.textContent='وضع الإضافة';});
+
+addQuickBtn.addEventListener('click',()=>{const name=prompt('اسم المدين؟');if(!name)return;const amount=Number(prompt('المبلغ (دينار)؟')||0);const d={id:crypto.randomUUID(),name,amount,date:today(),status:'unpaid',note:''};debts.unshift(d);save();render();});
+
+[searchEl,filterStatusEl,filterOverdueEl,sortByEl].forEach(el=>el.addEventListener('input',render));
+
+exportCsvBtn.addEventListener('click',()=>{
+  const header=['id','name','amount','date','status','note'];
+  const rows=debts.map(d=>header.map(k=>`"${String(d[k]??'').replace(/"/g,'""')}"`).join(','));
+  const csv=[header.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='debts.csv';a.click();
+});
+
+exportJsonBtn.addEventListener('click',()=>{const blob=new Blob([JSON.stringify(debts,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='debts.json';a.click();});
+
+importJsonInput.addEventListener('change',e=>{const file=e.target.files[0];if(!file)return;const fr=new FileReader();fr.onload=()=>{try{debts=JSON.parse(fr.result);save();render();alert('تم الاستيراد');}catch(err){alert('خطأ في الملف')}};fr.readAsText(file);e.target.value='';});
+
+printBtn.addEventListener('click',()=>{window.print();});
+
+render();
+</script>
+
+<script>
+// PWA registration
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(()=>console.log('SW registered')).catch(console.error);
+}
+</script>
+</body>
+</html>
